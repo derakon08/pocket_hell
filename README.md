@@ -10,20 +10,17 @@ Instead of using individual nodes per bullet, BulletMap uses Godot's MultiMesh a
 
 Bullets are stored as slots in a flat data structure. When a bullet is fired, it takes a slot from the dead bullet pool. When it expires, the slot is returned to the pool. No memory is allocated or freed during normal gameplay.
 
-Collision and rendering are handled in the same pass where possible, avoiding redundant iteration over active bullets.
-
 Bullets are sorted into **movement buckets** and optionally **visuals buckets** at spawn time. Each bucket maps to a specific processing method via a function pointer array, making it straightforward to add new movement or visual types without modifying existing logic.
 
 Collision targets are organized into named **collision groups**. Each group holds a list of Node2D targets with circular hitboxes. On collision, the target's `Hit(Vector2)` method is called with the bullet ID.
 
-Bullet IDs are two-part (`Vector2i`: index + instance counter) to prevent stale references from affecting bullets that have been recycled into a new instance.
+Bullet IDs are two-part `Vector2i` to prevent stale references from affecting bullets that have been recycled into a new instance.
 
 ---
 
 ## Features
 
 - MultiMesh instancing with direct buffer writes
-- Object pooling — slots are recycled, no per-frame allocation
 - Named collision groups with circular hitbox checking
 - Atlas sprite support
 - Angular velocity for curved and spinning bullet paths
@@ -45,8 +42,9 @@ Bullet IDs are two-part (`Vector2i`: index + instance counter) to prevent stale 
 
 ## Work in progress
 
+- Manually indexed dead/active bullets vector to avoid memory reallocation
 - Additional movement types (planned)
-- Visuals bucket processing not yet implemented
+- Visuals bucket processing not yet implemented (lacking functions)
 - Some `BulletData` fields not yet accessible via `SwapBulletData`
 - `ClearMap` gradual clearing mode stubbed but not implemented
 
@@ -72,7 +70,7 @@ bullet_map.Pause()
 bullet_map.Unpause()
 bullet_map.AllowShooting(false)
 bullet_map.ClearMap(0) # instant clear
-bullet_map.Reset()     # clear + remove all collision groups
+bullet_map.Reset()     # clear bullets + nodes in collision groups
 ```
 
 Collision targets need a `Hit(bullet_id: Vector2)` method. The bullet ID passed is the same `Vector2i` returned by `Shoot()`.
