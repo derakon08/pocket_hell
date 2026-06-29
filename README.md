@@ -4,6 +4,8 @@ A GDExtension bullet management system written in C++, designed for games that n
 
 Instead of using individual nodes per bullet, BulletMap uses Godot's MultiMesh and writes directly to the rendering buffer, keeping CPU overhead low even with many active bullets.
 
+BulletMap uses the Bullet class as the primary way to transfer information. This class is purely made to ensure the data fields passed are correct.
+
 ---
 
 ## How it works
@@ -21,6 +23,7 @@ Bullet IDs are two-part `Vector2i` to prevent stale references from affecting bu
 ## Features
 
 - MultiMesh instancing with direct buffer writes
+- No per-frame memory allocation
 - Named collision groups with circular hitbox checking
 - Atlas sprite support
 - Angular velocity for curved and spinning bullet paths
@@ -42,7 +45,6 @@ Bullet IDs are two-part `Vector2i` to prevent stale references from affecting bu
 
 ## Work in progress
 
-- Manually indexed dead/active bullets vector to avoid memory reallocation
 - Additional movement types (planned)
 - Visuals bucket processing not yet implemented (lacking functions)
 - Some `BulletData` fields not yet accessible via `SwapBulletData`
