@@ -33,6 +33,10 @@ void BulletMap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sprite_size"), &BulletMap::get_sprite_size);
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "sprite_size"), "set_sprite_size", "get_sprite_size");
 
+	ClassDB::bind_method(D_METHOD("set_game_area", "value"), &BulletMap::set_game_area);
+	ClassDB::bind_method(D_METHOD("get_game_area"), &BulletMap::get_game_area);
+	ADD_PROPERTY(PropertyInfo(Variant::RECT2, "game_area"), "set_game_area", "get_game_area");
+
 	BIND_ENUM_CONSTANT(MOVEMENT_NORMAL);
 	BIND_ENUM_CONSTANT(MOVEMENT_NORMAL_NORENDER);
 	BIND_ENUM_CONSTANT(BULLET_DATA_ORIGIN);
@@ -98,6 +102,7 @@ void BulletMap::_ready() {
 	}
 	
 	SetupBuckets();
+	PopulateBuckets(preloaded_pool_size);
 	ResetPoolSize();
 
 	paused = false;
@@ -150,9 +155,11 @@ void BulletMap::BulletCollision() {
         const std::vector<double>& nodes_radius = collision_group_node_radius[collision_group];
 
 		array_size = collision_group_nodes[collision_group].size();
+
         for (int node_index = 0; node_index < array_size; node_index++) {
 			vec_difference[0] = bullet_origin[0] - nodes_position[node_index][0];
 			vec_difference[1] = bullet_origin[1] - nodes_position[node_index][1];
+
             if (OverlapsArea(vec_difference, nodes_radius[node_index] + collision_area * 0.5)) {
                 collision_group_nodes[collision_group][node_index]->call("Hit", Vector2(index, bullet_instance[index]));
             }
@@ -165,23 +172,33 @@ void BulletMap::ManageBulletLifetimes(double delta) {
 	float* buffer = bullet_buffer.ptrw();
 	int bullet_index;
 	int live_array_size = active_bullets.size() -1;
+	float bullet_radius;
 
 	for (int index = live_array_size; index > -1; index--) {
 		bullet_index = active_bullets[index];
-		
-		if (bullet_lifetime[bullet_index] > delta) {
-			bullet_lifetime[bullet_index] -= delta;
-		}
-		else {
-			bullet_lifetime[bullet_index] = 0;
-			dead_bullets.push_back(bullet_index);
-			active_bullets[index] = active_bullets[live_array_size];
-			live_array_size--;
 
-			for (int access = bullet_index * buffer_unit; access < (bullet_index * buffer_unit) + buffer_unit; access++) {
-				buffer[access] = 0;
-			}
+		if (bullet_lifetime[bullet_index] < 0) { //if -1 then it means it never dies on screen, else it can go offscreen
+			bullet_radius = bullet_visuals_size[bullet_index];
+
+			if (buffer[bullet_index * buffer_unit + 3] > game_area_left + bullet_radius && buffer[bullet_index * buffer_unit + 3] < game_area_right + bullet_radius &&
+				buffer[bullet_index * buffer_unit + 7] > game_area_top + bullet_radius && buffer[bullet_index * buffer_unit + 7] < game_area_bottom + bullet_radius)
+				{ continue; }
+
+		} else if (bullet_lifetime[bullet_index] > delta) { //checking if the bullet can get past this frame without dying (avoids setting values lower than 0)
+			bullet_lifetime[bullet_index] -= delta;
+			continue;
 		}
+		
+		bullet_lifetime[bullet_index] = 0;
+		bullet_instance[bullet_index] += 1;
+		dead_bullets.push_back(bullet_index);
+		active_bullets[index] = active_bullets[live_array_size];
+		live_array_size--;
+
+		for (int access = bullet_index * buffer_unit; access < (bullet_index * buffer_unit) + buffer_unit; access++) {
+			buffer[access] = 0;
+		}
+		
 	}
 
 	active_bullets.resize(live_array_size + 1);
@@ -212,7 +229,12 @@ void BulletMap::IncreaseMultimeshInstanceCount() {
 	bullet_collision_group.resize(instance_count);
 	bullet_instance.resize(instance_count);
 
+	active_bullets.reserve(instance_count);
+	dead_bullets.reserve(instance_count);
+
 	float* buffer = bullet_buffer.ptrw();
+
+	PopulateBuckets(instance_count);
 
 	for (int bullet_number :active_bullets){
 		buffer[bullet_number * buffer_unit + 8] = (bullet_sprite_index[bullet_number] % sprites_per_atlas_row);
@@ -268,6 +290,17 @@ void BulletMap::SetupBuckets() {
 }
 
 
+void BulletMap::PopulateBuckets(int reserve) {
+	for (int type = 0; type < MovementType::MOVEMENT_COUNT; type++) {
+		movement_buckets[type].reserve(reserve);
+	}
+
+	for (int type = 0; type < VisualsType::VISUALS_COUNT; type++) {
+		visuals_buckets[type].reserve(reserve);
+	}
+}
+
+
 
 
 
@@ -300,14 +333,12 @@ Vector2i BulletMap::Shoot(Ref<Bullet> bullet, MovementType movement_type = Movem
 	bullet_angular_velocity[i] = bullet->angular_velocity;
 	bullet_sprite_index[i] = bullet->sprite_in_atlas;
 	bullet_visuals_size[i] = bullet->visual_size;
-	bullet_lifetime[i] = bullet->lifetime;
+	bullet_lifetime[i] = (bullet->clip_bullet)? -1 : bullet->lifetime;
 	bullet_rotation[i] = bullet->rotation;
 	bullet_speed[i] = bullet->speed;
 	bullet_size[i] = bullet->size;
 
 	bullet_collision_group[i] = collision_groups[bullet->collision_group.utf8().get_data()];
-
-	bullet_instance[i] += 1;
 	
 
 	if (visuals_type != VisualsType::VISUALS_NONE) { visuals_buckets[visuals_type].push_back(i); }
@@ -444,6 +475,8 @@ void BulletMap::ResetPoolSize() {
 
 	bullet_buffer.resize(preloaded_pool_size * buffer_unit);
 	dead_bullets.resize(preloaded_pool_size);
+	active_bullets.reserve(preloaded_pool_size);
+
 	active_bullets.clear();
 
 	for (int index = 0; index < preloaded_pool_size; index++) {

@@ -38,6 +38,10 @@ void Bullet::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_collision_group", "value"), &Bullet::set_collision_group);
     ClassDB::bind_method(D_METHOD("get_collision_group"), &Bullet::get_collision_group);
     ADD_PROPERTY(PropertyInfo(Variant::STRING, "collision_group"), "set_collision_group", "get_collision_group");
+
+    ClassDB::bind_method(D_METHOD("set_clip_bullet", "value"), &Bullet::set_clip_bullet);
+    ClassDB::bind_method(D_METHOD("get_clip_bullet"), &Bullet::get_clip_bullet);
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL, "clip_bullet"), "set_clip_bullet", "get_clip_bullet");
 }
 
 void Bullet::set_bullet_pos(const Vector2& value) { position = value; }
@@ -66,3 +70,6 @@ double Bullet::get_visual_size() const { return visual_size; }
 
 void Bullet::set_collision_group(String group) { collision_group = group; }
 String Bullet::get_collision_group() const { return collision_group; }
+
+void Bullet::set_clip_bullet(bool value) { clip_bullet = value; }
+bool Bullet::get_clip_bullet() const { return clip_bullet; }

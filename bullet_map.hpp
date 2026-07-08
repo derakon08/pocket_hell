@@ -37,6 +37,8 @@ private:
 	std::vector<double> bullet_rotation;
 	std::vector<double> bullet_lifetime;
 	std::vector<double> bullet_speed;
+	std::vector<bool> bullet_active;
+
 
 
 	//collision variables
@@ -64,6 +66,12 @@ private:
 	//Position + Custom data: 12 floats (8 floats for Transform2D, 4 floats of custom data)
 	static constexpr int buffer_unit = 12;
 	int pool_size;
+
+	//game area details
+	float game_area_top;
+	float game_area_right;
+	float game_area_left;
+	float game_area_bottom;
 
 
 	//state flags
@@ -95,6 +103,7 @@ private:
 	void IncreaseMultimeshInstanceCount();
 	//Called at ready(), will check every movement type and append an array for each
 	void SetupBuckets();
+	void PopulateBuckets(int reserve);
 	bool OverlapsArea(double vec[2], double collision_area);
 	void MovementDefault(double delta, int bucket_index);
 	void MovementDefaultNoRender(double delta, int bucket_index);
@@ -109,9 +118,20 @@ public:
 	int get_preloaded_pool_size() const {return preloaded_pool_size; }
 
 
-	godot::Vector2 sprite_size;
+	Vector2 sprite_size;
 	void set_sprite_size(Vector2 value) { sprite_size = value; }
 	Vector2 get_sprite_size() const {return sprite_size; }
+
+
+	Rect2 game_area;
+	void set_game_area(Rect2 value) {
+		game_area = value;
+		game_area_right = value.position.x + value.size.x;
+		game_area_bottom = value.position.y + value.size.y;
+		game_area_left = value.position.x;
+		game_area_top = value.position.y;
+	}
+	Rect2 get_game_area() const { return game_area; }
 
 
 	int get_pool_size() {return pool_size; }

@@ -20,6 +20,7 @@ public:
     double angular_velocity = 0.0f;
     double visual_size = 1.0f;
     godot::String collision_group = "dummy";
+    bool clip_bullet = true;
 
     void set_bullet_pos(const Vector2& value);
     Vector2 get_bullet_pos() const;
@@ -47,5 +48,8 @@ public:
 
     void set_collision_group(String group);
     String get_collision_group() const;
+
+    void set_clip_bullet(bool value);
+    bool get_clip_bullet() const;
 };
 };
