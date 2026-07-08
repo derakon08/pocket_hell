@@ -180,8 +180,8 @@ void BulletMap::ManageBulletLifetimes(double delta) {
 		if (bullet_lifetime[bullet_index] < 0) { //if -1 then it means it never dies on screen, else it can go offscreen
 			bullet_radius = bullet_visuals_size[bullet_index];
 
-			if (buffer[bullet_index * buffer_unit + 3] > game_area_left + bullet_radius && buffer[bullet_index * buffer_unit + 3] < game_area_right + bullet_radius &&
-				buffer[bullet_index * buffer_unit + 7] > game_area_top + bullet_radius && buffer[bullet_index * buffer_unit + 7] < game_area_bottom + bullet_radius)
+			if (buffer[bullet_index * buffer_unit + 3] > game_area_left - bullet_radius && buffer[bullet_index * buffer_unit + 3] < game_area_right + bullet_radius &&
+				buffer[bullet_index * buffer_unit + 7] > game_area_top - bullet_radius && buffer[bullet_index * buffer_unit + 7] < game_area_bottom + bullet_radius)
 				{ continue; }
 
 		} else if (bullet_lifetime[bullet_index] > delta) { //checking if the bullet can get past this frame without dying (avoids setting values lower than 0)
@@ -189,6 +189,7 @@ void BulletMap::ManageBulletLifetimes(double delta) {
 			continue;
 		}
 		
+		bullet_active[bullet_index] = false;
 		bullet_lifetime[bullet_index] = 0;
 		bullet_instance[bullet_index] += 1;
 		dead_bullets.push_back(bullet_index);
@@ -223,6 +224,7 @@ void BulletMap::IncreaseMultimeshInstanceCount() {
 	bullet_visuals_size.resize(instance_count);
 	bullet_lifetime.resize(instance_count);
 	bullet_rotation.resize(instance_count);
+	bullet_active.resize(instance_count);
 	bullet_speed.resize(instance_count);
 	bullet_size.resize(instance_count);
 
@@ -337,6 +339,8 @@ Vector2i BulletMap::Shoot(Ref<Bullet> bullet, MovementType movement_type = Movem
 	bullet_rotation[i] = bullet->rotation;
 	bullet_speed[i] = bullet->speed;
 	bullet_size[i] = bullet->size;
+
+	bullet_active[i] = true;
 
 	bullet_collision_group[i] = collision_groups[bullet->collision_group.utf8().get_data()];
 	
@@ -466,6 +470,7 @@ void BulletMap::ResetPoolSize() {
 	bullet_instance.resize(preloaded_pool_size);
 	bullet_rotation.resize(preloaded_pool_size);
 	bullet_lifetime.resize(preloaded_pool_size);
+	bullet_active.resize(preloaded_pool_size);
 	bullet_speed.resize(preloaded_pool_size);
 	bullet_size.resize(preloaded_pool_size);
 
@@ -637,7 +642,7 @@ void BulletMap::MovementDefaultNoRender(double delta, int bucket_index) {
 	for (int index = array_size; index > -1; index--) {
 		int& bullet = bucket[index];
 
-		if (bullet_lifetime[bullet] > 0) {
+		if (bullet_active[bullet]) {
 			sine = std::sin(bullet_rotation[bullet]);
 			cosine = std::cos(bullet_rotation[bullet]);
 
@@ -667,7 +672,7 @@ void BulletMap::MovementDefault(double delta, int bucket_index) {
 	for (int index = array_size; index > -1; index--) {
 		int& bullet = bucket[index];
 
-		if (bullet_lifetime[bullet] > 0) {
+		if (bullet_active[bullet]) {
 			visual_size = bullet_visuals_size[bullet];
 			sine = std::sin(bullet_rotation[bullet]);
 			cosine = std::cos(bullet_rotation[bullet]);
