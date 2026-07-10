@@ -27,6 +27,7 @@ Bullet IDs are two-part `Vector2i` to prevent stale references from affecting bu
 - Named collision groups with circular hitbox checking
 - Atlas sprite support
 - Angular velocity for curved and spinning bullet paths
+- Lifetime or screen visibility bullet clipping (but not both for the same bullet)
 - Movement bucket system for extensible movement types
 - Optional visuals bucket for decoupled visual processing
 - Pause/unpause and shoot control

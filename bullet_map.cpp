@@ -1,7 +1,5 @@
-//#include <unordered_map>
-//#include <vector>
+//#include <iostream>
 #include <cmath>
-#include <iostream>
 #include "bullet_map.hpp"
 #include <godot_cpp/classes/canvas_texture.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -190,7 +188,6 @@ void BulletMap::ManageBulletLifetimes(double delta) {
 		}
 		
 		bullet_active[bullet_index] = false;
-		bullet_lifetime[bullet_index] = 0;
 		bullet_instance[bullet_index] += 1;
 		dead_bullets.push_back(bullet_index);
 		active_bullets[index] = active_bullets[live_array_size];
@@ -199,7 +196,6 @@ void BulletMap::ManageBulletLifetimes(double delta) {
 		for (int access = bullet_index * buffer_unit; access < (bullet_index * buffer_unit) + buffer_unit; access++) {
 			buffer[access] = 0;
 		}
-		
 	}
 
 	active_bullets.resize(live_array_size + 1);
